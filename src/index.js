@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
+import axios from "axios";
 
 import TodoItem from "./todoItem";
 
@@ -15,6 +16,12 @@ class App extends React.Component {
     };
   }
 
+  componentDidMount() {
+    fetch("https://jmadsen-todo-backend.herokuapp.com/todos")
+      .then(response => response.json())
+      .then(data => this.setState({ todos: data }));
+  }
+
   handleChange = event => {
     this.setState({
       todo: event.target.value
@@ -23,16 +30,42 @@ class App extends React.Component {
 
   renderTodos = () => {
     return this.state.todos.map(todo => {
-      return <TodoItem title={todo} />;
+      return (
+        <TodoItem key={todo.id} todoItem={todo} deleteItem={this.deleteItem} />
+      );
     });
   };
 
   handleSubmit = event => {
     event.preventDefault();
-    this.setState({
-      todos: [...this.state.todos, this.state.todo],
-      todo: ""
-    });
+    axios({
+      method: "post",
+      url: "https://jmadsen-todo-backend.herokuapp.com/add-todo",
+      headers: { "content-type": "application/json" },
+      data: {
+        title: this.state.todo,
+        done: false
+      }
+    })
+      .then(data => {
+        this.setState({
+          todos: [...this.state.todos, data.data],
+          todo: ""
+        });
+      })
+      .catch(error => console.log(error));
+  };
+
+  deleteItem = id => {
+    fetch(`https://jmadsen-todo-backend.herokuapp.com/todo/${id}`, {
+      method: "DELETE"
+    }).then(
+      this.setState({
+        todos: this.state.todos.filter(item => {
+          return item.id !== id;
+        })
+      })
+    );
   };
 
   render() {
